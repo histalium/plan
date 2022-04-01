@@ -11,11 +11,11 @@ public record FamilyName
 
     public string Value { get; init; }
 
-    public static OneOf<FamilyName, Error> ParseFamilyName(string value)
+    public static OneOf<FamilyName, ErrorMessage> ParseFamilyName(string? value)
     {
         if (string.IsNullOrWhiteSpace(value))
         {
-            return new Error("Family name can not be empty.");
+            return new ErrorMessage("Family name can not be empty.");
         }
 
         return new FamilyName(value);

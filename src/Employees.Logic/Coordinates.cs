@@ -12,26 +12,26 @@ public record Coordinates
 
     public double Longitude { get; init; }
 
-    public static OneOf<Coordinates, Error> ParseCoordinates(double valueLatitude, double valueLongitude)
+    public static OneOf<Coordinates, ErrorMessage> ParseCoordinates(double valueLatitude, double valueLongitude)
     {
         if (valueLatitude < -90)
         {
-            return new Error("Latitude can not be below -90.");
+            return new ErrorMessage("Latitude can not be below -90.");
         }
 
         if (valueLatitude > 90)
         {
-            return new Error("Latitude can not be above 90.");
+            return new ErrorMessage("Latitude can not be above 90.");
         }
 
         if (valueLongitude < -180)
         {
-            return new Error("Longitude can not be below -180.");
+            return new ErrorMessage("Longitude can not be below -180.");
         }
 
         if (valueLongitude > 180)
         {
-            return new Error("Longitude can not be above 180.");
+            return new ErrorMessage("Longitude can not be above 180.");
         }
 
         return new Coordinates(valueLatitude, valueLongitude);

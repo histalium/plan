@@ -9,11 +9,11 @@ public record GivenName
 
     public string Value { get; init; }
 
-    public static OneOf<GivenName, Error> ParseGivenName(string value)
+    public static OneOf<GivenName, ErrorMessage> ParseGivenName(string? value)
     {
         if (string.IsNullOrWhiteSpace(value))
         {
-            return new Error("Given name can not be empty.");
+            return new ErrorMessage("Given name can not be empty.");
         }
 
         return new GivenName(value);

@@ -9,11 +9,11 @@ public record StreetName
 
     public string Value { get; init; }
 
-    public static OneOf<StreetName, Error> ParseStreetName(string value)
+    public static OneOf<StreetName, ErrorMessage> ParseStreetName(string value)
     {
         if (string.IsNullOrWhiteSpace(value))
         {
-            return new Error("Street name can not be empty.");
+            return new ErrorMessage("Street name can not be empty.");
         }
 
         return new StreetName(value);

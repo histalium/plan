@@ -9,11 +9,11 @@ public record Postcode
 
     public string Value { get; init; }
 
-    public static OneOf<Postcode, Error> ParsePostcode(string value)
+    public static OneOf<Postcode, ErrorMessage> ParsePostcode(string value)
     {
         if (string.IsNullOrWhiteSpace(value))
         {
-            return new Error("Postcode can not be empty.");
+            return new ErrorMessage("Postcode can not be empty.");
         }
 
         return new Postcode(value);

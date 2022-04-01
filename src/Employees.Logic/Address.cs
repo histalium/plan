@@ -7,7 +7,7 @@ public record Address(
     Postcode Postcode,
     Coordinates Coordinates)
 {
-    public static OneOf<Address, Error> ParseAddress(string valueStreetName,
+    public static OneOf<Address, ErrorMessage> ParseAddress(string valueStreetName,
         string valueHouseNumber, string valueTown, string valuePostcode,
         double valueLatitude, double valueLongitude)
     {
