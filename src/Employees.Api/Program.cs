@@ -26,6 +26,7 @@ builder.Services.AddSingleton<CosmosClient>((_) =>
 });
 
 builder.Services.AddScoped<CreateEmployee>();
+builder.Services.AddScoped<ChangeEmployeeName>();
 builder.Services.AddScoped<IEmployeeEventStore, EmployeeEventStore>();
 
 var app = builder.Build();
@@ -39,6 +40,29 @@ app.MapPost("/employees", async ([FromBody] PostEmployee employee, [FromServices
 
     var createdResult = await name.Match<Task<OneOf<None, ErrorMessage>>>(
         t => createEmployee.ExecuteAsync(t.Item1, t.Item2),
+        e => Task.FromResult((OneOf<None, ErrorMessage>)e)
+    );
+
+    var respons = createdResult
+        .Match(
+            _ => Results.Accepted(),
+            e => Results.BadRequest(e)
+        );
+
+    return respons;
+});
+
+app.MapPut("/employees/{employeeId}/name", async ([FromBody] PutEmployeeName employeeName, [FromRoute] Guid employeeId,
+    [FromServices] ChangeEmployeeName changeEmployeeName) =>
+{
+    var givenName = GivenName.ParseGivenName(employeeName.GivenName);
+    var familyName = FamilyName.ParseFamilyName(employeeName.FamilyName);
+    var id = EmployeeId.FromGuid(employeeId);
+    var name = givenName
+        .TupleOrError(familyName);
+
+    var createdResult = await name.Match<Task<OneOf<None, ErrorMessage>>>(
+        t => changeEmployeeName.ExecuteAsync(id, t.Item1, t.Item2),
         e => Task.FromResult((OneOf<None, ErrorMessage>)e)
     );
 

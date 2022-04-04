@@ -13,4 +13,7 @@ public record EmployeeId
 
     public static EmployeeId NewEmployeeId()
         => new EmployeeId(Guid.NewGuid());
+
+    public static EmployeeId FromGuid(Guid value)
+        => new EmployeeId(value);
 }
