@@ -25,11 +25,33 @@ builder.Services.AddSingleton<CosmosClient>((_) =>
     return new CosmosClient(cosmosUri, cosmosKey);
 });
 
+builder.Services.AddScoped<Employees.Logic.GetEmployee>();
 builder.Services.AddScoped<CreateEmployee>();
 builder.Services.AddScoped<ChangeEmployeeName>();
 builder.Services.AddScoped<IEmployeeEventStore, EmployeeEventStore>();
 
 var app = builder.Build();
+
+app.MapGet("/employees/{employeeId}", async ([FromRoute] Guid employeeId, [FromServices] Employees.Logic.GetEmployee getEmployee) =>
+{
+    var Id = EmployeeId.FromGuid(employeeId);
+
+    var getResult = await getEmployee.ExecuteAsync(Id);
+
+    var respons = getResult
+        .Match(
+            e => Results.Ok(new Employees.Api.GetEmployee
+            {
+                Id = e.Id.Value,
+                GivenName = e.GivenName.Value,
+                FamilyName = e.FamilyName.Value
+            }),
+            _ => Results.NotFound(),
+            e => Results.BadRequest(e)
+        );
+
+    return respons;
+});
 
 app.MapPost("/employees", async ([FromBody] PostEmployee employee, [FromServices] CreateEmployee createEmployee) =>
 {

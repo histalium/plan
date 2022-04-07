@@ -11,7 +11,7 @@ public class ChangeEmployeeName
 
     public async Task<OneOf<None, ErrorMessage>> ExecuteAsync(EmployeeId id, GivenName givenName, FamilyName familyName)
     {
-        var nameChangedEvent = new EmployeeNameChanged(id, givenName, familyName);
+        var nameChangedEvent = new EmployeeNameChanged(givenName, familyName);
         return await employeeEventStore.AddEventAsync(id, 1, nameChangedEvent);
     }
 }
