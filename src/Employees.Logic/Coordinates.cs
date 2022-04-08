@@ -12,8 +12,18 @@ public record Coordinates
 
     public double Longitude { get; init; }
 
-    public static OneOf<Coordinates, ErrorMessage> ParseCoordinates(double valueLatitude, double valueLongitude)
+    public static OneOf<Coordinates, ErrorMessage> ParseCoordinates(double? valueLatitude, double? valueLongitude)
     {
+        if (!valueLatitude.HasValue)
+        {
+            return new ErrorMessage("Latitude can not be null.");
+        }
+
+        if (!valueLongitude.HasValue)
+        {
+            return new ErrorMessage("Longitude can not be null.");
+        }
+
         if (valueLatitude < -90)
         {
             return new ErrorMessage("Latitude can not be below -90.");
@@ -34,6 +44,6 @@ public record Coordinates
             return new ErrorMessage("Longitude can not be above 180.");
         }
 
-        return new Coordinates(valueLatitude, valueLongitude);
+        return new Coordinates(valueLatitude.Value, valueLongitude.Value);
     }
 }

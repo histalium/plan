@@ -9,7 +9,7 @@ public record HouseNumber
 
     public string Value { get; init; }
 
-    public static OneOf<HouseNumber, ErrorMessage> ParseHouseNumber(string value)
+    public static OneOf<HouseNumber, ErrorMessage> ParseHouseNumber(string? value)
     {
         if (string.IsNullOrWhiteSpace(value))
         {

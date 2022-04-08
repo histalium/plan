@@ -9,7 +9,7 @@ public record Postcode
 
     public string Value { get; init; }
 
-    public static OneOf<Postcode, ErrorMessage> ParsePostcode(string value)
+    public static OneOf<Postcode, ErrorMessage> ParsePostcode(string? value)
     {
         if (string.IsNullOrWhiteSpace(value))
         {

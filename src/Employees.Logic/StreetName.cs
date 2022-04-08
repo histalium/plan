@@ -9,7 +9,7 @@ public record StreetName
 
     public string Value { get; init; }
 
-    public static OneOf<StreetName, ErrorMessage> ParseStreetName(string value)
+    public static OneOf<StreetName, ErrorMessage> ParseStreetName(string? value)
     {
         if (string.IsNullOrWhiteSpace(value))
         {

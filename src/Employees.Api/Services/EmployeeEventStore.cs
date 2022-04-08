@@ -31,6 +31,10 @@ public class EmployeeEventStore : IEmployeeEventStore
                     await AddToStoreAsync(nameof(EmployeeNameChanged), new EmployeeNameChangedEventData(nameChanged));
                     break;
 
+                case EmployeeAddressChanged addressChanged:
+                    await AddToStoreAsync(nameof(EmployeeAddressChanged), new EmployeeAddressChangedEventData(addressChanged));
+                    break;
+
                 default:
                     return new ErrorMessage("Type not implemented");
             }
@@ -51,7 +55,7 @@ public class EmployeeEventStore : IEmployeeEventStore
         }
     }
 
-    public async Task<OneOf<IReadOnlyCollection<OneOf<EmployeeCreated, EmployeeNameChanged>>, ErrorMessage>> GetEventsAsync(EmployeeId employeeId)
+    public async Task<OneOf<IReadOnlyCollection<OneOf<EmployeeCreated, EmployeeNameChanged, EmployeeAddressChanged>>, ErrorMessage>> GetEventsAsync(EmployeeId employeeId)
     {
         var events = cosmosClient.GetContainer("ToDoList", "Items")
             .GetItemQueryStreamIterator($"SELECT * FROM c WHERE c.Stream = '{employeeId.Value}' ORDER BY c.Version");
@@ -75,7 +79,7 @@ public class EmployeeEventStore : IEmployeeEventStore
             .ToList();
     }
 
-    private async IAsyncEnumerable<OneOf<OneOf<EmployeeCreated, EmployeeNameChanged>, ErrorMessage>> ParseEvents(Stream stream)
+    private async IAsyncEnumerable<OneOf<OneOf<EmployeeCreated, EmployeeNameChanged, EmployeeAddressChanged>, ErrorMessage>> ParseEvents(Stream stream)
     {
         using var document = await JsonDocument.ParseAsync(stream);
         JsonElement root = document.RootElement;
@@ -94,8 +98,8 @@ public class EmployeeEventStore : IEmployeeEventStore
 
                         yield return givenName
                             .TupleOrError(familyName)
-                            .Match<OneOf<OneOf<EmployeeCreated, EmployeeNameChanged>, ErrorMessage>>(
-                                ((GivenName GivenName, FamilyName FamilyName) t) => (OneOf<EmployeeCreated, EmployeeNameChanged>)new EmployeeCreated(id, t.GivenName, t.FamilyName),
+                            .Match<OneOf<OneOf<EmployeeCreated, EmployeeNameChanged, EmployeeAddressChanged>, ErrorMessage>>(
+                                ((GivenName GivenName, FamilyName FamilyName) t) => (OneOf<EmployeeCreated, EmployeeNameChanged, EmployeeAddressChanged>)new EmployeeCreated(id, t.GivenName, t.FamilyName),
                                 e => e);
 
                         break;
@@ -108,8 +112,31 @@ public class EmployeeEventStore : IEmployeeEventStore
 
                         yield return givenName
                             .TupleOrError(familyName)
-                            .Match<OneOf<OneOf<EmployeeCreated, EmployeeNameChanged>, ErrorMessage>>(
-                                ((GivenName GivenName, FamilyName FamilyName) t) => (OneOf<EmployeeCreated, EmployeeNameChanged>)new EmployeeNameChanged(t.GivenName, t.FamilyName),
+                            .Match<OneOf<OneOf<EmployeeCreated, EmployeeNameChanged, EmployeeAddressChanged>, ErrorMessage>>(
+                                ((GivenName GivenName, FamilyName FamilyName) t) => (OneOf<EmployeeCreated, EmployeeNameChanged, EmployeeAddressChanged>)new EmployeeNameChanged(t.GivenName, t.FamilyName),
+                                e => e);
+
+                        break;
+                    }
+
+                case nameof(EmployeeAddressChanged):
+                    {
+                        var streetName = StreetName.ParseStreetName(data.GetProperty("StreetName").GetString());
+                        var houseNumber = HouseNumber.ParseHouseNumber(data.GetProperty("HouseNumber").GetString());
+                        var town = Town.ParseTown(data.GetProperty("Town").GetString());
+                        var postcode = Postcode.ParsePostcode(data.GetProperty("Postcode").GetString());
+                        var coordinatesProperty = data.GetProperty("Coordinates");
+                        var latitude = coordinatesProperty.GetProperty("Latitude").GetDouble();
+                        var longitude = coordinatesProperty.GetProperty("Longitude").GetDouble();
+                        var coordinates = Coordinates.ParseCoordinates(latitude, longitude);
+                        yield return streetName
+                            .TupleOrError(houseNumber)
+                            .TupleOrError(town)
+                            .TupleOrError(postcode)
+                            .TupleOrError(coordinates)
+                            .Match<OneOf<OneOf<EmployeeCreated, EmployeeNameChanged, EmployeeAddressChanged>, ErrorMessage>>(
+                                ((StreetName StreetName, HouseNumber HouseNumber, Town Town, Postcode Postcode, Coordinates Coordinates) t)
+                                    => (OneOf<EmployeeCreated, EmployeeNameChanged, EmployeeAddressChanged>)new EmployeeAddressChanged(t.StreetName, t.HouseNumber, t.Town, t.Postcode, t.Coordinates),
                                 e => e);
 
                         break;

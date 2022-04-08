@@ -9,7 +9,7 @@ public record Town
 
     public string Value { get; init; }
 
-    public static OneOf<Town, ErrorMessage> ParseTown(string value)
+    public static OneOf<Town, ErrorMessage> ParseTown(string? value)
     {
         if (string.IsNullOrWhiteSpace(value))
         {

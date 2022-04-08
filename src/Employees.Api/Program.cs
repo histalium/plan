@@ -28,6 +28,7 @@ builder.Services.AddSingleton<CosmosClient>((_) =>
 builder.Services.AddScoped<Employees.Logic.GetEmployee>();
 builder.Services.AddScoped<CreateEmployee>();
 builder.Services.AddScoped<ChangeEmployeeName>();
+builder.Services.AddScoped<ChangeEmployeeAddress>();
 builder.Services.AddScoped<IEmployeeEventStore, EmployeeEventStore>();
 
 var app = builder.Build();
@@ -44,7 +45,21 @@ app.MapGet("/employees/{employeeId}", async ([FromRoute] Guid employeeId, [FromS
             {
                 Id = e.Id.Value,
                 GivenName = e.GivenName.Value,
-                FamilyName = e.FamilyName.Value
+                FamilyName = e.FamilyName.Value,
+                Address = e.Address.Match<GetAddress?>(
+                    a => new GetAddress
+                    {
+                        StreetName = a.StreetName.Value,
+                        HouseNumber = a.HouseNumber.Value,
+                        Town = a.Town.Value,
+                        Postcode = a.Postcode.Value,
+                        Coordinates = new GetCoordinates
+                        {
+                            Latitude = a.Coordinates.Latitude,
+                            Longitude = a.Coordinates.Longitude
+                        }
+                    },
+                    _ => null)
             }),
             _ => Results.NotFound(),
             e => Results.BadRequest(e)
@@ -85,6 +100,40 @@ app.MapPut("/employees/{employeeId}/name", async ([FromBody] PutEmployeeName emp
 
     var createdResult = await name.Match<Task<OneOf<None, ErrorMessage>>>(
         t => changeEmployeeName.ExecuteAsync(id, t.Item1, t.Item2),
+        e => Task.FromResult((OneOf<None, ErrorMessage>)e)
+    );
+
+    var respons = createdResult
+        .Match(
+            _ => Results.Accepted(),
+            e => Results.BadRequest(e)
+        );
+
+    return respons;
+});
+
+app.MapPut("/employees/{employeeId}/address", async ([FromBody] PutEmployeeAddress employeeAddress, [FromRoute] Guid employeeId,
+    [FromServices] ChangeEmployeeAddress changeEmployeeAddress) =>
+{
+    var streetName = StreetName.ParseStreetName(employeeAddress.StreetName);
+    var houseNumber = HouseNumber.ParseHouseNumber(employeeAddress.HouseNumber);
+    var town = Town.ParseTown(employeeAddress.Town);
+    var postcode = Postcode.ParsePostcode(employeeAddress.Postcode);
+    var coordinates = Coordinates.ParseCoordinates(employeeAddress.Coordinates?.Latitude, employeeAddress.Coordinates?.Longitude);
+    var id = EmployeeId.FromGuid(employeeId);
+    var address = streetName
+        .TupleOrError(houseNumber)
+        .TupleOrError(town)
+        .TupleOrError(postcode)
+        .TupleOrError(coordinates)
+        .Match<OneOf<Address, ErrorMessage>>(
+            ((StreetName StreetName, HouseNumber HouseNumber, Town Town, Postcode Postcode, Coordinates Coordinates) t)
+                => new Address(t.StreetName, t.HouseNumber, t.Town, t.Postcode, t.Coordinates),
+            e => e
+        );
+
+    var createdResult = await address.Match<Task<OneOf<None, ErrorMessage>>>(
+        t => changeEmployeeAddress.ExecuteAsync(id, t),
         e => Task.FromResult((OneOf<None, ErrorMessage>)e)
     );
 
