@@ -55,7 +55,7 @@ public class EmployeeEventStore : IEmployeeEventStore
         }
     }
 
-    public async Task<OneOf<IReadOnlyCollection<OneOf<EmployeeCreated, EmployeeNameChanged, EmployeeAddressChanged>>, ErrorMessage>> GetEventsAsync(EmployeeId employeeId)
+    public async Task<OneOf<IReadOnlyCollection<EmployeeEvent>, ErrorMessage>> GetEventsAsync(EmployeeId employeeId)
     {
         var events = cosmosClient.GetContainer("ToDoList", "Items")
             .GetItemQueryStreamIterator($"SELECT * FROM c WHERE c.Stream = '{employeeId.Value}' ORDER BY c.Version");
@@ -79,7 +79,7 @@ public class EmployeeEventStore : IEmployeeEventStore
             .ToList();
     }
 
-    private async IAsyncEnumerable<OneOf<OneOf<EmployeeCreated, EmployeeNameChanged, EmployeeAddressChanged>, ErrorMessage>> ParseEvents(Stream stream)
+    private async IAsyncEnumerable<OneOf<EmployeeEvent, ErrorMessage>> ParseEvents(Stream stream)
     {
         using var document = await JsonDocument.ParseAsync(stream);
         JsonElement root = document.RootElement;
@@ -98,8 +98,8 @@ public class EmployeeEventStore : IEmployeeEventStore
 
                         yield return givenName
                             .TupleOrError(familyName)
-                            .Match<OneOf<OneOf<EmployeeCreated, EmployeeNameChanged, EmployeeAddressChanged>, ErrorMessage>>(
-                                ((GivenName GivenName, FamilyName FamilyName) t) => (OneOf<EmployeeCreated, EmployeeNameChanged, EmployeeAddressChanged>)new EmployeeCreated(id, t.GivenName, t.FamilyName),
+                            .Match<OneOf<EmployeeEvent, ErrorMessage>>(
+                                ((GivenName GivenName, FamilyName FamilyName) t) => (EmployeeEvent)new EmployeeCreated(id, t.GivenName, t.FamilyName),
                                 e => e);
 
                         break;
@@ -112,8 +112,8 @@ public class EmployeeEventStore : IEmployeeEventStore
 
                         yield return givenName
                             .TupleOrError(familyName)
-                            .Match<OneOf<OneOf<EmployeeCreated, EmployeeNameChanged, EmployeeAddressChanged>, ErrorMessage>>(
-                                ((GivenName GivenName, FamilyName FamilyName) t) => (OneOf<EmployeeCreated, EmployeeNameChanged, EmployeeAddressChanged>)new EmployeeNameChanged(t.GivenName, t.FamilyName),
+                            .Match<OneOf<EmployeeEvent, ErrorMessage>>(
+                                ((GivenName GivenName, FamilyName FamilyName) t) => (EmployeeEvent)new EmployeeNameChanged(t.GivenName, t.FamilyName),
                                 e => e);
 
                         break;
@@ -134,9 +134,9 @@ public class EmployeeEventStore : IEmployeeEventStore
                             .TupleOrError(town)
                             .TupleOrError(postcode)
                             .TupleOrError(coordinates)
-                            .Match<OneOf<OneOf<EmployeeCreated, EmployeeNameChanged, EmployeeAddressChanged>, ErrorMessage>>(
+                            .Match<OneOf<EmployeeEvent, ErrorMessage>>(
                                 ((StreetName StreetName, HouseNumber HouseNumber, Town Town, Postcode Postcode, Coordinates Coordinates) t)
-                                    => (OneOf<EmployeeCreated, EmployeeNameChanged, EmployeeAddressChanged>)new EmployeeAddressChanged(t.StreetName, t.HouseNumber, t.Town, t.Postcode, t.Coordinates),
+                                    => (EmployeeEvent)new EmployeeAddressChanged(t.StreetName, t.HouseNumber, t.Town, t.Postcode, t.Coordinates),
                                 e => e);
 
                         break;

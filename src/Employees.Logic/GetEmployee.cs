@@ -22,7 +22,7 @@ public class GetEmployee
     }
 
     private OneOf<Employee, None, ErrorMessage> BuildEmployee(OneOf<Employee, None, ErrorMessage> prev,
-        OneOf<EmployeeCreated, EmployeeNameChanged, EmployeeAddressChanged> curr)
+        EmployeeEvent curr)
     {
         return curr.Match<OneOf<Employee, None, ErrorMessage>>(
             created => new Employee(created.Id, created.GivenName, created.FamilyName, new None()),

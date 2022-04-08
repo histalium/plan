@@ -4,6 +4,6 @@ public interface IEmployeeEventStore
 {
     Task<OneOf<None, ErrorMessage>> AddEventAsync<T>(EmployeeId id, int expectedVersion,
         T employeeEvent);
-    Task<OneOf<IReadOnlyCollection<OneOf<EmployeeCreated, EmployeeNameChanged, EmployeeAddressChanged>>, ErrorMessage>>
+    Task<OneOf<IReadOnlyCollection<EmployeeEvent>, ErrorMessage>>
         GetEventsAsync(EmployeeId employeeId);
 }
